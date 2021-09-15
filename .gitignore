@@ -1,0 +1,11 @@
+*.png
+*.jpg
+*.npy
+*.json
+*.mat
+.idea/
+__pycache__/
+*.mp4
+*.npz
+*.tar
+*.zip
