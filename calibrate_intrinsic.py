@@ -10,7 +10,7 @@ from utils.dir_utils import *
 
 def parse_config():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root_dir', default='/home/user/Desktop/yjs/codes/MultiBasler/test')
+    parser.add_argument('--root_dir', default='/home/user/Desktop/yjs/codes/MultiBasler/cam2_calib')
     parser.add_argument('--cell_size', default=0.005)
     parser.add_argument('--grid_size', default=(4,3)) # (h, w)
     parser.add_argument('--h_dist', default=0.005)
