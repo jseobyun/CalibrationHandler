@@ -10,7 +10,7 @@ from utils.dir_utils import *
 
 def parse_config():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root_dir', default='/home/user/Desktop/yjs/codes/MultiBasler/cam2_calib')
+    parser.add_argument('--root_dir', default='/home/user/Desktop/yjs/codes/MultiBasler/oneshot_calib/view2')
     parser.add_argument('--cell_size', default=0.005)
     parser.add_argument('--grid_size', default=(4,3)) # (h, w)
     parser.add_argument('--h_dist', default=0.005)
@@ -43,11 +43,11 @@ def display_errors(obj_points, img_points, mtx, dist, rvecs, tvecs):
     ax.add_artist(limit_circle)
     print("RMSE values for individual images:")
 
-    for obj_point, img_point, rvec, tvec in zip(obj_points, img_points, rvecs, tvecs):
+    for i, (obj_point, img_point, rvec, tvec) in enumerate(zip(obj_points, img_points, rvecs, tvecs)):
         error, rmse = get_reproj_error(obj_point, img_point, mtx, dist, rvec, tvec)
 
         ax.scatter(error[:, 0], error[:, 1], marker='+')
-        print(rmse)
+        print(i, '--', rmse)
 
     ax.set_xlabel('x (px)')
     ax.set_ylabel('y (px)')
@@ -98,6 +98,7 @@ if __name__ == '__main__':
             canvas = draw_tags(image, tags)
             cv2.imwrite(os.path.join(vis_dir, 'tag_' + file_names[i]), canvas)
 
+        print(len(obj_points),'===', file_path)
         obj_points.append(obj_point)
         img_points.append(tag_points)
         file_paths_used.append(file_path)
