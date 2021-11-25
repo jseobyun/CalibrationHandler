@@ -10,7 +10,7 @@ from utils.dir_utils import *
 
 def parse_config():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root_dir', default='/home/user/Desktop/yjs/codes/MultiBasler/oneshot_calib/view2')
+    parser.add_argument('--root_dir', default='/home/jseob/Desktop/yjs/images/Gopro/cam3')
     parser.add_argument('--cell_size', default=0.005)
     parser.add_argument('--grid_size', default=(4,3)) # (h, w)
     parser.add_argument('--h_dist', default=0.005)
@@ -62,7 +62,7 @@ def undistort_images(image, mtx, dist):
 
 if __name__ == '__main__':
     args = parse_config()
-    img_dir = os.path.join(args.root_dir, 'images')
+    img_dir = os.path.join(args.root_dir, 'calib')
     if not os.path.exists(img_dir):
         raise Exception(f"No [images] directory in the root {args.root_dir}")
     vis_dir = os.path.join(args.root_dir, 'vis')
@@ -77,10 +77,13 @@ if __name__ == '__main__':
 
     img_points = []
     obj_points = []
-    obj_point = get_multi_tag_3Dpoints(cell_size=c_size, dim=args.grid_size, h_dist=args.h_dist, v_dist=args.v_dist)
+    obj_point = get_grid_tag_3Dpoints(cell_size=c_size, dim=args.grid_size, h_dist=args.h_dist, v_dist=args.v_dist)
 
     file_names = os.listdir(img_dir)
     file_paths = [os.path.join(img_dir, file_name) for file_name in file_names if file_name.endswith('.png') or file_name.endswith('.jpg')]
+
+    file_paths = file_paths[::70]
+
     file_paths_used = []
     for i, file_path in enumerate(file_paths):
         image = cv2.imread(file_path)
@@ -108,21 +111,27 @@ if __name__ == '__main__':
     rvecs = None
     tvecs = None
 
-    RMSE, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, (2560, 2048), mtx, dist, rvecs, tvecs)
+    img_h, img_w, _ = np.shape(image)
+
+    flags = cv2.CALIB_RATIONAL_MODEL
+    RMSE, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, (img_w, img_h), mtx, dist, rvecs, tvecs, flags=flags)
+
 
     display_errors(obj_points, img_points, mtx, dist, rvecs, tvecs)
+
     print("###########################")
     print("RMSE", RMSE)
     print("K", mtx)
     print("distortion coeffs", dist)
+
 
     intrinsic = {
         'fx' : mtx[0, 0],
         'fy' : mtx[1, 1],
         'cx' : mtx[0, 2],
         'cy' : mtx[1, 2],
-        'height': 2048,
-        'width' : 2560,
+        'height': img_h,
+        'width' : img_w,
         'coeffs': dist.reshape(-1).tolist()
     }
     with open(os.path.join(args.root_dir, 'intrinsic.json'), 'w') as json_file:
@@ -131,7 +140,30 @@ if __name__ == '__main__':
 
     for file_path_used in file_paths_used:
         image = cv2.imread(file_path_used)
-        image_ud = cv2.undistort(image, mtx, dist)
+
+        #dist[0, 0] = 0 # k1
+        #dist[0, 1] = 0 # k2
+        #dist[0, 2] = 0 # p1
+        #dist[0, 3] = 0 # p2
+        #dist[0, 4] = 0 # k3
+
+        new_mtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (img_w, img_h), 1)
+        # xmap, ymap = cv2.initUndistortRectifyMap(mtx, dist, None, new_mtx, (img_w, img_h), m1type=cv2.CV_32FC1)
+
+        #x,y,w,h = roi
+        # pt0 = (int(x), int(y))
+        # pt1 = (int(x+w), int(y))
+        # pt2 = (int(x+w), int(y+h))
+        # pt3 = (int(x), int(y+h))
+
+        image_ud = cv2.undistort(image, mtx, dist, None, new_mtx)
+        #image_ud = cv2.remap(image, xmap, ymap, cv2.INTER_LINEAR)
+
+        # image_ud = cv2.line(image_ud, pt0, pt1, (0, 200, 0), 2)
+        # image_ud = cv2.line(image_ud, pt1, pt2, (0, 200, 0), 2)
+        # image_ud = cv2.line(image_ud, pt2, pt3, (0, 200, 0), 2)
+        # image_ud = cv2.line(image_ud, pt3, pt0, (0, 200, 0), 2)
+
         cv2.imwrite(os.path.join(vis_dir, 'ud_' + file_path_used.split('/')[-1]), image_ud)
 
 

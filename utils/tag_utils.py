@@ -16,7 +16,7 @@ def get_tag_3Dpoints(cell_size):
                              [0, cell_size, 0]], dtype=np.float32)*5
     return world_points
 
-def get_multi_tag_3Dpoints(cell_size, dim, h_dist, v_dist):
+def get_grid_tag_3Dpoints(cell_size, dim, h_dist, v_dist):
     num_row = dim[0]
     num_col = dim[1]
 
@@ -52,3 +52,11 @@ def detect_tags(img_gray):
         return tags, num_tags
     else:
         return None, 0
+
+def filter_tags(tags, start_id, end_id):
+    if tags is None:
+        return None, 0
+    tags = [tag for tag in tags if tag.tag_id >= start_id and tag.tag_id <=end_id]
+    if len(tags) == 0:
+        return None, 0
+    return tags, len(tags)
